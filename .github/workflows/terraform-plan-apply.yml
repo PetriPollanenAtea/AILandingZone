@@ -1,0 +1,259 @@
+name: Terraform plan and apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Plan for review or apply the plan after protected-environment approval"
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+        default: plan
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-ai-landing-zone-terraform
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Create reviewable plan
+    runs-on: ${{ fromJSON(vars.TERRAFORM_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    defaults:
+      run:
+        working-directory: infra/terraform
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      TF_VAR_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+      TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_workload_subscription_id: ${{ vars.WORKLOAD_SUBSCRIPTION_ID }}
+      TF_VAR_alz_parent_resource_id: ${{ vars.ALZ_PARENT_RESOURCE_ID }}
+      TF_VAR_subscription_placement: ${{ vars.TF_VAR_SUBSCRIPTION_PLACEMENT }}
+      TF_VAR_public_access_exemptions: ${{ vars.TF_VAR_PUBLIC_ACCESS_EXEMPTIONS || '{}' }}
+      TF_VAR_platform_operations_resource_group_name: ${{ vars.PLATFORM_OPERATIONS_RESOURCE_GROUP_NAME }}
+      TF_VAR_log_analytics_workspace_name: ${{ vars.LOG_ANALYTICS_WORKSPACE_NAME }}
+      TF_VAR_diagnostic_retention_in_days: ${{ vars.DIAGNOSTIC_RETENTION_IN_DAYS }}
+      TF_VAR_authorized_log_reader_principal_ids: ${{ vars.TF_VAR_AUTHORIZED_LOG_READER_PRINCIPAL_IDS || '[]' }}
+      TF_VAR_platform_diagnostic_targets: ${{ vars.TF_VAR_PLATFORM_DIAGNOSTIC_TARGETS || '{}' }}
+      TF_VAR_workload_diagnostic_targets: ${{ vars.TF_VAR_WORKLOAD_DIAGNOSTIC_TARGETS || '{}' }}
+      TF_VAR_diagnostic_exclusions: ${{ vars.TF_VAR_DIAGNOSTIC_EXCLUSIONS || '{}' }}
+      TF_VAR_cost_budgets: ${{ vars.TF_VAR_COST_BUDGETS }}
+      TF_VAR_environment: ${{ vars.TF_ENVIRONMENT }}
+      TF_VAR_resource_prefix: ${{ vars.RESOURCE_PREFIX }}
+      TF_VAR_connectivity_resource_group_name: ${{ vars.CONNECTIVITY_RESOURCE_GROUP_NAME }}
+      TF_VAR_connectivity_hub_virtual_network_name: ${{ vars.CONNECTIVITY_HUB_VIRTUAL_NETWORK_NAME }}
+      TF_VAR_connectivity_hub_address_space: ${{ vars.TF_VAR_CONNECTIVITY_HUB_ADDRESS_SPACE }}
+      TF_VAR_firewall_subnet_address_prefix: ${{ vars.FIREWALL_SUBNET_ADDRESS_PREFIX }}
+      TF_VAR_firewall_sku_tier: ${{ vars.FIREWALL_SKU_TIER }}
+      TF_VAR_firewall_policy_rule_collection_groups: ${{ vars.TF_VAR_FIREWALL_POLICY_RULE_COLLECTION_GROUPS }}
+      TF_VAR_workload_network_resource_group_name: ${{ vars.WORKLOAD_NETWORK_RESOURCE_GROUP_NAME }}
+      TF_VAR_workload_virtual_network_name: ${{ vars.WORKLOAD_VIRTUAL_NETWORK_NAME }}
+      TF_VAR_workload_virtual_network_address_space: ${{ vars.TF_VAR_WORKLOAD_VIRTUAL_NETWORK_ADDRESS_SPACE }}
+      TF_VAR_foundry_agent_subnet_name: ${{ vars.FOUNDRY_AGENT_SUBNET_NAME }}
+      TF_VAR_foundry_agent_subnet_address_prefix: ${{ vars.FOUNDRY_AGENT_SUBNET_ADDRESS_PREFIX }}
+      TF_VAR_private_endpoint_subnet_name: ${{ vars.PRIVATE_ENDPOINT_SUBNET_NAME }}
+      TF_VAR_private_endpoint_subnet_address_prefix: ${{ vars.PRIVATE_ENDPOINT_SUBNET_ADDRESS_PREFIX }}
+      TF_VAR_authorized_operator_virtual_network_ids: ${{ vars.TF_VAR_AUTHORIZED_OPERATOR_VIRTUAL_NETWORK_IDS || '[]' }}
+      TF_VAR_foundry_resource_group_name: ${{ vars.FOUNDRY_RESOURCE_GROUP_NAME }}
+      TF_VAR_foundry_account_name: ${{ vars.FOUNDRY_ACCOUNT_NAME }}
+      TF_VAR_foundry_project_name: ${{ vars.FOUNDRY_PROJECT_NAME }}
+      TF_VAR_foundry_project_display_name: ${{ vars.FOUNDRY_PROJECT_DISPLAY_NAME }}
+      TF_VAR_foundry_region_capability_evidence_reference: ${{ vars.FOUNDRY_REGION_CAPABILITY_EVIDENCE_REFERENCE }}
+      TF_VAR_foundry_preview_api_support_evidence_reference: ${{ vars.FOUNDRY_PREVIEW_API_SUPPORT_EVIDENCE_REFERENCE }}
+      TF_VAR_foundry_capability_provisioner_access_evidence_reference: ${{ vars.FOUNDRY_CAPABILITY_PROVISIONER_ACCESS_EVIDENCE_REFERENCE }}
+      TF_VAR_foundry_recovery_approval_reference: ${{ vars.FOUNDRY_RECOVERY_APPROVAL_REFERENCE }}
+      TF_VAR_foundry_storage_account_name: ${{ vars.FOUNDRY_STORAGE_ACCOUNT_NAME }}
+      TF_VAR_foundry_storage_replication_type: ${{ vars.FOUNDRY_STORAGE_REPLICATION_TYPE }}
+      TF_VAR_foundry_blob_soft_delete_retention_days: ${{ vars.FOUNDRY_BLOB_SOFT_DELETE_RETENTION_DAYS }}
+      TF_VAR_foundry_container_soft_delete_retention_days: ${{ vars.FOUNDRY_CONTAINER_SOFT_DELETE_RETENTION_DAYS }}
+      TF_VAR_foundry_cosmosdb_account_name: ${{ vars.FOUNDRY_COSMOSDB_ACCOUNT_NAME }}
+      TF_VAR_foundry_cosmosdb_total_throughput_limit: ${{ vars.FOUNDRY_COSMOSDB_TOTAL_THROUGHPUT_LIMIT }}
+      TF_VAR_foundry_cosmosdb_backup: ${{ vars.FOUNDRY_COSMOSDB_BACKUP }}
+      TF_VAR_foundry_cosmosdb_zone_redundant: ${{ vars.FOUNDRY_COSMOSDB_ZONE_REDUNDANT }}
+      TF_VAR_foundry_cosmosdb_runtime_database_name: ${{ vars.FOUNDRY_COSMOSDB_RUNTIME_DATABASE_NAME }}
+      TF_VAR_foundry_agent_blob_container_name: ${{ vars.FOUNDRY_AGENT_BLOB_CONTAINER_NAME }}
+      TF_VAR_foundry_file_blob_container_name: ${{ vars.FOUNDRY_FILE_BLOB_CONTAINER_NAME }}
+      TF_VAR_foundry_search_service_name: ${{ vars.FOUNDRY_SEARCH_SERVICE_NAME }}
+      TF_VAR_foundry_search_sku: ${{ vars.FOUNDRY_SEARCH_SKU }}
+      TF_VAR_foundry_key_vault_name: ${{ vars.FOUNDRY_KEY_VAULT_NAME }}
+      TF_VAR_foundry_key_vault_soft_delete_retention_days: ${{ vars.FOUNDRY_KEY_VAULT_SOFT_DELETE_RETENTION_DAYS }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+
+      - name: Authenticate to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate required deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          required_vars=(
+            ARM_CLIENT_ID
+            ARM_TENANT_ID
+            ARM_SUBSCRIPTION_ID
+            TF_STATE_STORAGE_ACCOUNT
+            TF_STATE_CONTAINER
+            TF_STATE_KEY
+            TF_VAR_alz_parent_resource_id
+            TF_VAR_subscription_placement
+            TF_VAR_platform_operations_resource_group_name
+            TF_VAR_log_analytics_workspace_name
+            TF_VAR_diagnostic_retention_in_days
+            TF_VAR_cost_budgets
+            TF_VAR_environment
+            TF_VAR_resource_prefix
+            TF_VAR_workload_subscription_id
+            TF_VAR_connectivity_resource_group_name
+            TF_VAR_connectivity_hub_virtual_network_name
+            TF_VAR_connectivity_hub_address_space
+            TF_VAR_firewall_subnet_address_prefix
+            TF_VAR_firewall_sku_tier
+            TF_VAR_firewall_policy_rule_collection_groups
+            TF_VAR_workload_network_resource_group_name
+            TF_VAR_workload_virtual_network_name
+            TF_VAR_workload_virtual_network_address_space
+            TF_VAR_foundry_agent_subnet_name
+            TF_VAR_foundry_agent_subnet_address_prefix
+            TF_VAR_private_endpoint_subnet_name
+            TF_VAR_private_endpoint_subnet_address_prefix
+            TF_VAR_foundry_resource_group_name
+            TF_VAR_foundry_account_name
+            TF_VAR_foundry_project_name
+            TF_VAR_foundry_project_display_name
+            TF_VAR_foundry_region_capability_evidence_reference
+            TF_VAR_foundry_preview_api_support_evidence_reference
+            TF_VAR_foundry_capability_provisioner_access_evidence_reference
+            TF_VAR_foundry_recovery_approval_reference
+            TF_VAR_foundry_storage_account_name
+            TF_VAR_foundry_storage_replication_type
+            TF_VAR_foundry_blob_soft_delete_retention_days
+            TF_VAR_foundry_container_soft_delete_retention_days
+            TF_VAR_foundry_cosmosdb_account_name
+            TF_VAR_foundry_cosmosdb_total_throughput_limit
+            TF_VAR_foundry_cosmosdb_backup
+            TF_VAR_foundry_cosmosdb_zone_redundant
+            TF_VAR_foundry_cosmosdb_runtime_database_name
+            TF_VAR_foundry_agent_blob_container_name
+            TF_VAR_foundry_file_blob_container_name
+            TF_VAR_foundry_search_service_name
+            TF_VAR_foundry_search_sku
+            TF_VAR_foundry_key_vault_name
+            TF_VAR_foundry_key_vault_soft_delete_retention_days
+          )
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Required repository variable $name is not configured."
+              exit 1
+            fi
+          done
+          for name in \
+            TF_VAR_foundry_region_capability_evidence_reference \
+            TF_VAR_foundry_preview_api_support_evidence_reference \
+            TF_VAR_foundry_capability_provisioner_access_evidence_reference \
+            TF_VAR_foundry_recovery_approval_reference; do
+            value="${!name}"
+            if [[ "${value,,}" == replace-with* ]]; then
+              echo "::error::Required owner evidence variable $name still contains an example placeholder."
+              exit 1
+            fi
+          done
+          if [[ ! "$TF_STATE_STORAGE_ACCOUNT" =~ ^[a-z0-9]{3,24}$ ]]; then
+            echo "::error::TF_STATE_STORAGE_ACCOUNT must be a valid Azure Storage account name."
+            exit 1
+          fi
+
+      - name: Initialize remote state
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+            -backend-config="container_name=${TF_STATE_CONTAINER}" \
+            -backend-config="key=${TF_STATE_KEY}"
+
+      - name: Check formatting and validate
+        run: |
+          terraform fmt -check -recursive
+          terraform validate -no-color
+
+      - name: Create plan
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload plan for protected apply
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra/terraform/tfplan
+          if-no-files-found: error
+          retention-days: 1
+
+  apply:
+    name: Apply reviewed plan
+    if: inputs.operation == 'apply'
+    needs: plan
+    runs-on: ${{ fromJSON(vars.TERRAFORM_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    environment:
+      name: production
+    defaults:
+      run:
+        working-directory: infra/terraform
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+
+      - name: Authenticate to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize remote state
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+            -backend-config="container_name=${TF_STATE_CONTAINER}" \
+            -backend-config="key=${TF_STATE_KEY}"
+
+      - name: Download plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra/terraform
+
+      - name: Apply approved plan
+        run: terraform apply -input=false -auto-approve tfplan

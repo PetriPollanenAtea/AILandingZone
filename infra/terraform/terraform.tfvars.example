@@ -1,0 +1,98 @@
+tenant_id                 = "00000000-0000-0000-0000-000000000000"
+subscription_id           = "00000000-0000-0000-0000-000000000001"
+workload_subscription_id  = "00000000-0000-0000-0000-000000000002"
+alz_parent_resource_id    = "replace-with-approved-parent-management-group-name"
+environment               = "dev"
+resource_prefix           = "replace-me"
+
+subscription_placement = {
+  platform = {
+    subscription_id       = "00000000-0000-0000-0000-000000000001"
+    management_group_name = "replace-with-platform-management-group"
+  }
+  workload = {
+    subscription_id       = "00000000-0000-0000-0000-000000000002"
+    management_group_name = "replace-with-workload-management-group"
+  }
+}
+
+public_access_exemptions = {}
+
+platform_operations_resource_group_name = "replace-with-platform-operations-resource-group"
+log_analytics_workspace_name            = "replace-with-unique-workspace-name"
+diagnostic_retention_in_days             = 90
+authorized_log_reader_principal_ids      = []
+platform_diagnostic_targets              = {}
+workload_diagnostic_targets              = {}
+diagnostic_exclusions                    = {}
+
+cost_budgets = {
+  platform = {
+    amount               = 1000
+    time_grain           = "Monthly"
+    start_date           = "2026-12-01T00:00:00Z"
+    contact_emails       = ["<platform-cost-owner@example.com>"]
+    actual_threshold     = 80
+    forecasted_threshold = 100
+  }
+  workload = {
+    amount               = 1000
+    time_grain           = "Monthly"
+    start_date           = "2026-12-01T00:00:00Z"
+    contact_emails       = ["<workload-cost-owner@example.com>"]
+    actual_threshold     = 80
+    forecasted_threshold = 100
+  }
+}
+
+connectivity_resource_group_name      = "replace-with-platform-connectivity-resource-group"
+connectivity_hub_virtual_network_name = "replace-with-approved-hub-vnet-name"
+connectivity_hub_address_space        = ["replace-with-non-overlapping-hub-cidr"]
+firewall_subnet_address_prefix        = "replace-with-approved-firewall-subnet-cidr"
+firewall_sku_tier                     = "replace-with-owner-approved-tier"
+
+// Supply approved, destination-specific rules before creating workload routes or planning a deployment.
+// See the Terraform README for the required shape; an empty map intentionally fails plan-time validation.
+firewall_policy_rule_collection_groups = {}
+
+workload_network_resource_group_name       = "replace-with-workload-network-resource-group"
+workload_virtual_network_name              = "replace-with-approved-workload-vnet-name"
+workload_virtual_network_address_space     = ["replace-with-non-overlapping-workload-cidr"]
+foundry_agent_subnet_name                  = "foundry-agent"
+foundry_agent_subnet_address_prefix        = "replace-with-approved-foundry-agent-subnet-cidr"
+private_endpoint_subnet_name               = "private-endpoints"
+private_endpoint_subnet_address_prefix    = "replace-with-approved-private-endpoint-subnet-cidr"
+authorized_operator_virtual_network_ids   = []
+
+// P04 inputs: replace placeholders only after the owner has recorded the required evidence.
+foundry_resource_group_name      = "replace-with-workload-foundry-resource-group"
+foundry_account_name             = "replace-with-unique-foundry-account-name"
+foundry_project_name             = "replace-with-foundry-project-name"
+foundry_project_display_name     = "replace-with-owner-approved-project-display-name"
+foundry_region_capability_evidence_reference           = "replace-with-model-tool-and-quota-evidence-reference"
+foundry_preview_api_support_evidence_reference         = "replace-with-preview-api-support-evidence-reference"
+foundry_capability_provisioner_access_evidence_reference = "replace-with-provisioner-rbac-evidence-reference"
+foundry_recovery_approval_reference                    = "replace-with-approved-d2-recovery-reference"
+
+foundry_storage_account_name          = "replacewithuniquestorage"
+foundry_storage_replication_type       = "replace-with-d2-approved-replication"
+foundry_blob_soft_delete_retention_days = 0
+foundry_container_soft_delete_retention_days = 0
+
+foundry_cosmosdb_account_name               = "replace-with-cosmos-account"
+foundry_cosmosdb_total_throughput_limit     = 3000
+foundry_cosmosdb_backup = {
+  type                = "replace-with-d2-approved-backup-type"
+  interval_in_minutes = 0
+  retention_in_hours  = 0
+  storage_redundancy  = "replace-with-d2-approved-redundancy"
+}
+foundry_cosmosdb_zone_redundant             = false
+foundry_cosmosdb_runtime_database_name      = "replace-with-owner-verified-runtime-database"
+foundry_agent_blob_container_name            = "replace-with-owner-verified-agent-container"
+foundry_file_blob_container_name             = "replace-with-owner-verified-files-container"
+
+foundry_search_service_name = "replace-with-search-service-name"
+foundry_search_sku          = "replace-with-owner-approved-search-sku"
+foundry_key_vault_name      = "replace-with-unique-key-vault-name"
+foundry_key_vault_soft_delete_retention_days = 0
